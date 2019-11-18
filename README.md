@@ -13,7 +13,7 @@ When invoked as a measure driver, it runs a command (specified in the driver's c
 The job to run is specified as an executable command. Optune parameters can be passed as part of the  command, to allow setting values and measurement control parameters to be used.
 
 The following top level variables can be used as part of the command, specified in format as consumed by Python's `format` function:
- - `state` - a dictionary with the application state that was last adjusted to (or the value of `default_state` from the configuration file, if there was no previous adjust)
+ - `state` - a dictionary with the application state that was last adjusted to (or the value of `application` from the configuration file, if there was no previous adjust)
  - `control` - a dictionary with the control section of the measurement request that was passed to the driver as part of a measure operation.
 
 See sample `config.yaml` below for examples.
@@ -27,26 +27,25 @@ batch:
     command: ./run_job.sh --cpu {state[application][components][master][settings][cpu][value]} --mem {state[application][components][master][settings][mem][value]:.0f} --timeout {control.userdata.timeout}
 
     # Default state to use when no previous adjust (required)
-    default_state:
-        application:
-            components:
-                web:
-                    settings:
-                        inst_type:
-                        type: enum
-                        unit: ec2
-                        step: 1
-                        value: c5.2xlarge
-                        values:
-                        - c5.2xlarge
-                        - m5.xlarge
-                        - m5a.xlarge
-                    replicas:
-                        type: range
-                        min: 1
-                        max: 50
-                        step: 1
-                        unit: count
+    application:
+        components:
+            web:
+                settings:
+                    inst_type:
+                    type: enum
+                    unit: ec2
+                    step: 1
+                    value: c5.2xlarge
+                    values:
+                    - c5.2xlarge
+                    - m5.xlarge
+                    - m5a.xlarge
+                replicas:
+                    type: range
+                    min: 1
+                    max: 50
+                    step: 1
+                    unit: count
 
     # Extra metrics to extract from command output (optional)
     metrics:
@@ -54,7 +53,7 @@ batch:
             # Regex to be run against stdoutput of command. Return first match.
             # If no match, return error.
             output_regex: "Job took (\.d) seconds"
-            unit: ms
+            unit: seconds
 ```
 
 ## Build servo container and push to docker registry
