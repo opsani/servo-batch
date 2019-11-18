@@ -4,7 +4,9 @@ Optune adjust and measure driver for batch jobs
 ## Overview
 This driver runs a batch job and returns the time it took to complete it, as well as user-configurable (optional) metrics extracted from the output of the batch job.
 
-Unlike a typical Optune driver, servo-batch is meant to perform the functions on both an adjust and a measure driver.
+Unlike a typical Optune driver, servo-batch is meant to perform the functions on both an adjust and a measure driver. It uses the name of the file (i.e. `./adjust` or `./measure`) to decide what operation is requested.
+
+Note: This driver is not intended or tested to work with driver aggregators.
 
 When invoked as an adjust driver, it simply stores the state it was asked to adjust to. When asked to describe the state of the application (i.e. invoked as `./adjust --query`), it takes the state defined in the driver config (lists all components and their settings, including default values), updates the settings values with the last state that it received on adjust (if present) and returns the result.
 
