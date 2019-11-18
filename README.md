@@ -6,7 +6,7 @@ This driver runs a batch job and returns the time it took to complete it, as wel
 
 Unlike a typical Optune driver, servo-batch is meant to perform the functions on both an adjust and a measure driver.
 
-When invoked as an adjust driver, it simply stores the state it was asked to adjust to. When asked to describe the state of the application (i.e. invoked as `./adjust --query`), it returns the last state it was asked to adjust to, or if that is not present - the default state from the driver's configuration.
+When invoked as an adjust driver, it simply stores the state it was asked to adjust to. When asked to describe the state of the application (i.e. invoked as `./adjust --query`), it takes the state defined in the driver config (lists all components and their settings, including default values), updates the settings values with the last state that it received on adjust (if present) and returns the result.
 
 When invoked as a measure driver, it runs a command (specified in the driver's configuration), waits for it to complete and returns the time it took to run the command as a metric named `total_runtime`, value in seconds. Optionally, the driver can be configured to extract more metrics from the output of the command (stdout), where the value for a metric is extracted based on a regular expression specified in the driver's config. The first group in the defined regular expression is used to extract a value. For example, if a command outputs "It took 20 minutes to bake the cake" and the driver is configured with a metric that looks for a regular expression `^It took (\d+) minutes`, the value for the metric would be `20`.
 
@@ -23,37 +23,38 @@ TBD: Dependencies (i.e. adjust.py, measure.py, etc.)
 ## Driver configuration
 ```
 batch:
-    # Command to run (required)
-    command: ./run_job.sh --cpu {state[application][components][master][settings][cpu][value]} --mem {state[application][components][master][settings][mem][value]:.0f} --timeout {control.userdata.timeout}
+  # Command to run (required)
+  command: ./run_job.sh --cpu {state[application][components][master][settings][cpu][value]} --mem {state[application][components][master][settings][mem][value]:.0f} --timeout {control.userdata.timeout}
 
-    # Default state to use when no previous adjust (required)
-    application:
-        components:
-            web:
-                settings:
-                    inst_type:
-                    type: enum
-                    unit: ec2
-                    step: 1
-                    value: c5.2xlarge
-                    values:
-                    - c5.2xlarge
-                    - m5.xlarge
-                    - m5a.xlarge
-                replicas:
-                    type: range
-                    min: 1
-                    max: 50
-                    step: 1
-                    unit: count
+  # Default state to use when no previous adjust (required)
+  application:
+      components:
+      web:
+          settings:
+          inst_type:
+              default: c5.2xlarge
+              type: enum
+              unit: ec2
+              step: 1
+              values:
+              - c5.2xlarge
+              - m5.xlarge
+              - m5a.xlarge
+          replicas:
+              default: 25
+              type: range
+              min: 1
+              max: 50
+              step: 1
+              unit: count
 
-    # Extra metrics to extract from command output (optional)
-    metrics:
-        my_metric_name: # specify metric name
-            # Regex to be run against stdoutput of command. Return first match.
-            # If no match, return error.
-            output_regex: "Job took (\.d) seconds"
-            unit: seconds
+  # Extra metrics to extract from command output (optional)
+  metrics:
+    my_metric_name: # specify metric name
+      # Regex to be run against stdoutput of command. Return first match.
+      # If no match, return error.
+      output_regex: "Job took (\.d) seconds"
+      unit: seconds
 ```
 
 ## Build servo container and push to docker registry
