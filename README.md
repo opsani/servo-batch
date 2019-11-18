@@ -50,6 +50,9 @@ batch:
               step: 1
               unit: count
 
+  # expected measure duration in seconds, used to calculate progress (optional, default 3600)
+  expected_duration: 3600
+
   # Extra metrics to extract from command output (optional)
   metrics:
     my_metric_name: # specify metric name
