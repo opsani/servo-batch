@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+# Adapted from https://github.com/opsani/servo-statestore/blob/master/adjust
+
+import os
+
+from adjust import Adjust
+import common
+import state_store
+
+DRIVER_NAME = "batch"
+DRIVER_VERSION = "0.1"
+DRIVER_DESC = "An Optune adjust driver that stores settings/parameters used in conjunction with the batch measure driver"
+HAS_CANCEL=False
+
+config_path = os.environ.get('OPTUNE_CONFIG', './config.yaml')
+
+REQUIRED_SETTINGS_FIELDS = [ "default", "type" ]
+
+class BatchAdjustDriver(Adjust):
+    def query(self):
+        return common.query_state(DRIVER_NAME, config_path)
+
+    def adjust(self, data):
+
+        assert ("application" in data), \
+            "Invalid input: missing application key"
+
+        # Store application key in state
+        # This may raise an exception
+        state_store.set_state(data)
+
+
+# initialize and run
+if __name__ == "__main__":
+    driver = BatchAdjustDriver(
+        version = DRIVER_VERSION,
+        cli_desc = DRIVER_DESC,
+        supports_cancel = HAS_CANCEL,
+        progress_interval = None)
+
+    driver.run()

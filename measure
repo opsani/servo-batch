@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+
+from functools import singledispatch
+import os
+import re
+import subprocess
+import sys
+import time
+from types import SimpleNamespace
+
+import common
+from measure import Measure, ST_FAILED
+
+DRIVER_NAME = "batch"
+DESC="Batch measure driver for Opsani Optune"
+VERSION="1.0"
+HAS_CANCEL=True
+
+DEFAULT_EXPECTED_DURATION = 3600 # seconds. aka 1 hour
+
+config_path = os.environ.get('OPTUNE_CONFIG', './config.yaml')
+
+# NOTE: SimpleNamespace is used to allow . (dot) access of dictionary data within the command string
+# https://stackoverflow.com/a/50491016
+@singledispatch
+def wrap_namespace(ob):
+    return ob
+
+@wrap_namespace.register(dict)
+def _wrap_dict(ob):
+    return SimpleNamespace(**{k: wrap_namespace(v) for k, v in ob.items()})
+
+@wrap_namespace.register(list)
+def _wrap_list(ob):
+    return [wrap_namespace(v) for v in ob]
+
+class BatchMeasureDriver(Measure):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not (self.args.info):
+            self.start_time = 0.0
+            self.config = common.parse_config(DRIVER_NAME, config_path)
+
+    def handle_cancel(self, signal, frame):
+        err = "Exiting due to signal: %s"%signal
+        self.print_measure_error(err, ST_FAILED)
+        sys.exit(3)
+
+    def describe(self):
+        metrics = { 'total_runtime': { 'unit': 'seconds' } }
+        for m_name, m_data in self.config.get('metrics', {}).items():
+            metrics[m_name] = {}
+            unit = m_data.get('unit')
+            if unit:
+                metrics[m_name]['unit'] = unit
+
+        return metrics
+
+    def print_progress(self):
+        if self.start_time:
+            elapsed_time = time.time() - self.start_time
+            self.progress = int(round(elapsed_time / self.config.get('expected_duration', DEFAULT_EXPECTED_DURATION) * 100))
+        
+        super().print_progress()
+
+    def measure(self):
+        try:
+            in_metrics = self.input_data['metrics']
+        except:
+            raise Exception('Measure input is missing "metrics" key')
+
+        # Make simple namespace for _control
+        control = wrap_namespace(self.input_data.get('control'))
+
+        state = common.query_state(DRIVER_NAME, self.config)
+        
+        # Make dict of simple namespaces for components
+        sns_dict = {}
+        for c_name, c_data in state["application"]["components"].items():
+            sett_vals = {}
+            for s_name, s_data in c_data["settings"].items():
+                sett_vals[s_name] = s_data["value"]
+            sns_dict[c_name] = wrap_namespace(sett_vals)
+
+        try:
+            formatted = self.config['command'].format(_control=control, **sns_dict)
+        except Exception as e:
+            raise Exception('Failed to construct formatted command from string `{}`. \nsettings: {} \n\n_control: {}'.format(self.config['command'], sns_dict, control)) from e
+
+        self.progress_message = "Running command"
+        self.print_progress()
+
+        self.start_time = time.time()
+
+        completed_proc = subprocess.run(args=formatted, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            completed_proc.check_returncode()
+        except Exception as e:
+            raise Exception('Command `{}` failed with status code {} \n\nSTDERR: {} \n\nSTDOUT: {}'.format(formatted, completed_proc.returncode, str(completed_proc.stderr, 'UTF-8'), str(completed_proc.stdout, 'UTF-8'))) from e
+
+        elapsed_time = time.time() - self.start_time
+
+        self.progress_message = "Parsing metrics"
+        self.print_progress()
+
+        ret_metrics = {'total_runtime': { 'unit': 'seconds', 'value': elapsed_time }}
+        try:
+            in_metrics.remove('total_runtime')
+        except:
+            pass
+
+        # regex parse on output
+        if in_metrics:
+            stdout = str(completed_proc.stdout, 'UTF-8')
+            for m_name in in_metrics:
+                m_conf = self.config['metrics'].get(m_name)
+                if not m_conf:
+                    raise Exception('Unable to parse batch output for unknown metric input; metric name `{}` not defined in config at {}'.format(m_name, config_path))
+
+                match = re.search(m_conf['output_regex'], stdout)
+                if not match:
+                    raise Exception('No match found in batch standard output for metric name `{}`.\nRegex: {} \n\nSTDOUT: {}'.format(m_name, m_conf['output_regex'], stdout))
+                
+                ret_metrics[m_name] = { 'value': match.group(1) }
+                unit = m_conf.get('unit')
+                if unit:
+                    ret_metrics[m_name]['unit'] = unit
+
+        return ret_metrics, state["application"].get("annotations", {})
+
+if __name__ == '__main__':
+    driver = BatchMeasureDriver(cli_desc=DESC, supports_cancel=HAS_CANCEL, version=VERSION)
+    driver.run()

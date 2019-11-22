@@ -1,0 +1,35 @@
+---
+batch:
+  # pytest command -v
+  command: ./test/dummy_job.sh --cpu {web.cpu} --mem {web.mem:.0f} --timeout {_control.duration}
+  # docker command -v
+  # command: /test/dummy_job.sh --cpu {web.cpu} --mem {web.mem:.0f} --timeout 60
+  application:
+    annotations: 
+      annotation1: test1
+      annotation2: test2
+    # other_thing: thing
+    components:
+      web:
+        settings:
+          cpu:
+            type: 'enum'
+            unit: 'CPU'
+            default: 256
+            values:
+            - 256
+            - 512
+            - 1024
+          mem:
+            type: 'range'
+            unit: 'MEM'
+            min: 50
+            max: 300
+            step: 10
+            default: 100
+  # expected measure duration in seconds, used to calculate progress (optional, default 3600)
+  expected_duration: 60
+  metrics:
+    test_metric:
+      output_regex: 'Dummy result: (\d+)'
+      unit: count
