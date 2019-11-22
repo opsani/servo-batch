@@ -107,11 +107,3 @@ curl --remote-name-all \
     https://raw.githubusercontent.com/opsani/servo/master/state_store.py
 ```
 1. Run `pytest -s` from the servo-batch project folder
-
-
-1. Copy/symlink `common.py` from this repo's project folder to folder `test/`
-1. Copy/symlink `adjust` (no file extension) from this repo's project folder to folder `test/`, rename to `adjust_driver.py`
-1. Copy/symlink `measure` (no file extension) from this repo's project folder to folder `test/`, rename to `measure_driver.py`
-1. Copy/symlink `adjust.py` from `https://github.com/opsani/servo/tree/master/` to folder `test/`
-1. Copy/symlink `measure.py` from `https://github.com/opsani/servo/tree/master/` to folder `test/`
-1. Copy/symlink `state_store.py` from `https://github.com/opsani/servo/tree/master/` to folder `test/`
