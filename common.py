@@ -72,7 +72,11 @@ def parse_config(driver_name, config_path):
                     "comp {}: setting {} must provide a list of acceptable values. Found: {}".format(c_name, s_name, s_data.get('values'))
             # validate_range_config()
             # adapted from https://github.com/opsani/servo/blob/4f672b97e430847e827bb122dbf0e2f6e4b95628/encoders/base.py#L83
-            else:
+            elif s_data['type'] == 'formula':
+                bad_keys = s_data.keys() - {'type', 'formula', 'default'}
+                assert len(bad_keys) < 1, \
+                    "comp {}: range setting {} config was malformed, contained unknown key(s) {}".format(c_name, s_name, ', '.join(bad_keys))
+            elif s_data['type'] == 'range':
                 bad_keys = s_data.keys() - {'type', 'unit', 'min', 'max', 'step', 'default'}
                 assert len(bad_keys) < 1, \
                     "comp {}: range setting {} config was malformed, contained unknown key(s) {}".format(c_name, s_name, ', '.join(bad_keys))
@@ -135,5 +139,13 @@ def query_state(driver_name, config_path_path_or_dict):
                 q["components"][c_name]["settings"][s_name]["value"] = q["components"][c_name]["settings"][s_name]["default"]
 
             q["components"][c_name]["settings"][s_name].pop('default')                
+
+    for c_name, c_data in state["application"]["components"].items():
+        for s_name, _ in c_data["settings"].items():
+            # Update 'value' key from state if present (and contained by state)
+            try:
+                q["components"][c_name]["settings"].update({s_name: {"value": c_data["settings"][s_name]["value"]}})
+            except:
+                q["components"][c_name]["settings"][s_name]["value"] = q["components"][c_name]["settings"][s_name]["default"]
 
     return { "application": q }

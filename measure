@@ -73,12 +73,14 @@ class BatchMeasureDriver(Measure):
         control = wrap_namespace(self.input_data.get('control'))
 
         state = common.query_state(DRIVER_NAME, self.config)
-        
+        print(f"DEBUG: {state}")
         # Make dict of simple namespaces for components
         sns_dict = {}
         for c_name, c_data in state["application"]["components"].items():
             sett_vals = {}
+            print(f"DEBUG: Settings:: {c_data['settings'].items()}")
             for s_name, s_data in c_data["settings"].items():
+                print(f"DEBUG: s_name: {s_name} s_data {s_data}")
                 sett_vals[s_name] = s_data["value"]
             sns_dict[c_name] = wrap_namespace(sett_vals)
 
