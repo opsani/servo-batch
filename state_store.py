@@ -9,8 +9,8 @@ def get_state(file=DFLT_FILE):
     """
     Get state, returns an object
     """
-#    if not os.path.exists("/servo/state"):
-#        os.makedirs("/servo/state")
+    if not os.path.exists("/servo/state"):
+        os.makedirs("/servo/state")
 
     try:
         f = open(file, 'r+')
