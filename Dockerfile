@@ -18,7 +18,7 @@ ADD https://raw.githubusercontent.com/opsani/servo/master/servo \
     https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/common.py \
     /servo/
 
-RUN chmod a+x /servo/adjust /servo/measure /servo/servo
+RUN chmod a+x /servo/adjust /servo/measure /servo/servo && echo '{}' > /servo/state.yaml
 
 ENV PYTHONUNBUFFERED=1
 

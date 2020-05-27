@@ -1,7 +1,3 @@
-import sys
-import os
-import yaml
-
 DFLT_FILE="./state.yaml"
 
 
@@ -9,12 +5,14 @@ def get_state(file=DFLT_FILE):
     """
     Get state, returns an object
     """
-    try:
-        f = open(file, 'r+')
-        state = yaml.safe_load(f)
-    except IOError as e:
-        state = {}
-
+    with open(file, 'r+') as f:
+        try:
+            state = yaml.safe_load(f)
+        except yaml.error.YAMLError as e:
+            state = {}
+            yaml.dump(state, f, default_flow_Style=false)
+        except IOError as e:
+            state = {}
     return state
 
 
