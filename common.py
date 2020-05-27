@@ -1,6 +1,10 @@
 import math
 import re
 import yaml
+import os
+import sys
+import json
+import yaml
 
 import state_store
 
@@ -90,7 +94,7 @@ def parse_config(driver_name, config_path):
                 # Optional param, pass if missing
                 assert isinstance(s_data.get('default', 0), (int, float)), \
                     'comp {}: range setting {} config was malformed; default must be a number when provided. Found {}.'.format(c_name, s_name, s_data.get('default'))
-                    
+
                 assert s_data['min'] <= s_data['max'], \
                     'comp {}: range setting {} config was malformed; supplied min is higher than max'.format(c_name, s_name)
 
@@ -119,13 +123,15 @@ def query_state(driver_name, config_path_path_or_dict):
     }
 
     state = state_store.get_state()
+    print(f"DEBUG: state data: {state}", file=sys.stderr)
+
     if state:
         assert ("application" in state), "Invalid state: missing application key"
 
     for key, val in cfg["application"].items():
         if key == "components":
             continue
-        try:            
+        try:
             q[key] = state["application"][key]
         except:
             q[key] = val
@@ -138,14 +144,15 @@ def query_state(driver_name, config_path_path_or_dict):
             except:
                 q["components"][c_name]["settings"][s_name]["value"] = q["components"][c_name]["settings"][s_name]["default"]
 
-            q["components"][c_name]["settings"][s_name].pop('default')                
+            q["components"][c_name]["settings"][s_name].pop('default')
 
-    for c_name, c_data in state["application"]["components"].items():
-        for s_name, _ in c_data["settings"].items():
-            # Update 'value' key from state if present (and contained by state)
-            try:
-                q["components"][c_name]["settings"].update({s_name: {"value": c_data["settings"][s_name]["value"]}})
-            except:
-                q["components"][c_name]["settings"][s_name]["value"] = q["components"][c_name]["settings"][s_name]["default"]
+    if 'application' in state:
+        for c_name, c_data in state["application"]["components"].items():
+            for s_name, _ in c_data["settings"].items():
+                # Update 'value' key from state if present (and contained by state)
+                try:
+                    q["components"][c_name]["settings"].update({s_name: {"value": c_data["settings"][s_name]["value"]}})
+                except:
+                    q["components"][c_name]["settings"][s_name]["value"] = q["components"][c_name]["settings"][s_name]["default"]
 
     return { "application": q }

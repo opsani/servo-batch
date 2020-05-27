@@ -12,10 +12,10 @@ RUN pip3 install requests PyYAML python-dateutil
 ADD https://raw.githubusercontent.com/opsani/servo/master/servo \
     https://raw.githubusercontent.com/opsani/servo/master/adjust.py \
     https://raw.githubusercontent.com/opsani/servo/master/measure.py \
-    https://raw.githubusercontent.com/opsani/servo/master/state_store.py \
-    ./adjust \
-    ./common.py \
-    ./measure \
+    https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/state_store.py \
+    https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/adjust \
+    https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/measure \
+    https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/common.py \
     /servo/
 
 RUN chmod a+x /servo/adjust /servo/measure
