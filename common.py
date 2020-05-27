@@ -123,7 +123,6 @@ def query_state(driver_name, config_path_path_or_dict):
     }
 
     state = state_store.get_state()
-    print(f"DEBUG: state data: {state}", file=sys.stderr)
 
     if state:
         assert ("application" in state), "Invalid state: missing application key"

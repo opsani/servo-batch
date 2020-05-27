@@ -1,5 +1,5 @@
 # adapted from https://github.com/opsani/servo-ec2asg-newrelic/blob/master/Dockerfile
-FROM python:3.6-slim
+FROM python:3-slim
 
 WORKDIR /servo
 
@@ -18,7 +18,7 @@ ADD https://raw.githubusercontent.com/opsani/servo/master/servo \
     https://raw.githubusercontent.com/opsani/servo-batch/derived_parameters/common.py \
     /servo/
 
-RUN chmod a+x /servo/adjust /servo/measure
+RUN chmod a+x /servo/adjust /servo/measure /servo/servo
 
 ENV PYTHONUNBUFFERED=1
 
