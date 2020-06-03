@@ -23,25 +23,31 @@ class BatchAdjustDriver(Adjust):
         return common.query_state(DRIVER_NAME, config_path)
 
     def adjust(self, data):
+        assert ("application" in data), \
+            "Invalid input: missing application key"
 
         config=common.parse_config(DRIVER_NAME, config_path)
 
-        disk_size = config['application']['components']['worker']['settings']['aggregate_disk']['default']
-        agg_mem = config['application']['components']['worker']['settings']['aggregate_memory']['default']
-        inst_type = data['application']['components']['worker']['settings']['inst_type']['value']
+        for comp_name, comp_data in config['application']['components'].items():
+            agg_disk = data['application']['components'][comp_name]['settings'].get('aggregate_disk', {}).get('value')
+            if agg_disk is None:
+                agg_disk = comp_data['settings']['aggregate_disk']['default']
+            agg_mem = data['application']['components'][comp_name]['settings'].get('aggregate_memory', {}).get('value')
+            if agg_mem is None:
+                agg_mem = comp_data['settings']['aggregate_memory']['default']
+            inst_type = data['application']['components'][comp_name]['settings'].get('inst_type', {}).get('value')
+            if inst_type is None:
+                inst_type = comp_data['settings']['inst_type']['default']
+            replicas = data['application']['components'][comp_name]['settings'].get('replicas', {}).get('value')
+            if replicas is None:
+                replicas = config['application']['components'][comp_name]['settings']['replicas']['default']
 
-        if 'replicas' in data['application']['components']['worker']['settings']:
-            replicas = data['application']['components']['worker']['settings']['replicas']['value']
-        else:
-            replicas = config['application']['components']['worker']['settings']['replicas']['default']
-        data['application']['components']['worker']['settings'].update({'instance_disk':{'value': int(disk_size/replicas)}})
+            data['application']['components'][comp_name]['settings']['instance_disk'] = {'value': int(agg_disk/replicas)}
 
-        inst_mem = config['application']['annotations'][inst_type]['mem']
-        if int(inst_mem*replicas) < agg_mem:
-            raise AdjustError(f"{replicas} of {inst_type} only have {inst_mem*replicas} GB of memory which is less than {agg_mem} GB required", 
-                status = "rejected", reason = "rejected")
-        assert ("application" in data), \
-            "Invalid input: missing application key"
+            inst_mem = config['application']['annotations'][inst_type]['mem']
+            if int(inst_mem*replicas) < agg_mem:
+                raise AdjustError(f"component {comp_name}: {replicas} {inst_type} instances only have {inst_mem*replicas} GB of memory which is less than {agg_mem} GB required", 
+                    status = "rejected", reason = "scheduling-failed")
 
         # Store application key in state
         # This may raise an exception
