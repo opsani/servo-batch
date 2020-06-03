@@ -72,7 +72,7 @@ class BatchMeasureDriver(Measure):
         # Make simple namespace for _control
         control = wrap_namespace(self.input_data.get('control'))
 
-        state = common.query_state(DRIVER_NAME, self.config)
+        state = common.query_state(DRIVER_NAME, self.config, include_derived=True)
         # Make dict of simple namespaces for components
         sns_dict = {}
         for c_name, c_data in state["application"]["components"].items():

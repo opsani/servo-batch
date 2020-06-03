@@ -113,7 +113,7 @@ def parse_config(driver_name, config_path):
 
     return cfg
 
-def query_state(driver_name, config_path_path_or_dict):
+def query_state(driver_name, config_path_path_or_dict, include_derived=False):
     if isinstance(config_path_path_or_dict, str):
         cfg = parse_config(driver_name, config_path_path_or_dict)
     else:
@@ -146,13 +146,13 @@ def query_state(driver_name, config_path_path_or_dict):
 
             q["components"][c_name]["settings"][s_name].pop('default')
 
-    if state:
-        for c_name, c_data in state["application"]["components"].items():
-            for s_name, s_data in c_data["settings"].items():
-                # Update 'value' key from state if present (and contained by state)
-                try:
-                    q["components"][c_name]["settings"].setdefault('s_name', {}).update({"value": s_data["value"]})
-                except:
-                    pass # If config contains a default, it would have been set already in the above loop 
+        if include_derived:
+            if 'instance_disk' in state["application"]["components"][c_name]["settings"]:
+                q["components"][c_name]["settings"]["instance_disk"] = state["application"]["components"][c_name]["settings"]["instance_disk"]
+            else: # derive from defaults if present
+                replicas = q['components'][c_name]['settings'].get('replicas', {}).get('value')
+                agg_disk = q['components'][c_name]['settings'].get('aggregate_disk', {}).get('value')
+                if agg_disk is not None and replicas is not None:
+                    q["components"][c_name]["settings"]["instance_disk"] = {'value': int(agg_disk/replicas)}
 
     return { "application": q }
