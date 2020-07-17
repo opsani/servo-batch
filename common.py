@@ -147,7 +147,7 @@ def query_state(driver_name, config_path_path_or_dict, include_derived=False):
             q["components"][c_name]["settings"][s_name].pop('default')
 
         if include_derived:
-            if 'instance_disk' in state["application"]["components"][c_name]["settings"]:
+            if state and 'instance_disk' in state["application"]["components"][c_name]["settings"]:
                 q["components"][c_name]["settings"]["instance_disk"] = state["application"]["components"][c_name]["settings"]["instance_disk"]
             else: # derive from defaults if present
                 replicas = q['components'][c_name]['settings'].get('replicas', {}).get('value')
