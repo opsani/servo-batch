@@ -33,25 +33,25 @@ class BatchAdjustDriver(Adjust):
             replicas = data['application']['components'][comp_name]['settings'].get('replicas', {}).get('value')
             if replicas is None:
                 replicas = config['application']['components'][comp_name]['settings'].get('replicas', {}).get('default')
-            agg_disk = data['application']['components'][comp_name]['settings'].get('aggregate_disk', {}).get('value')
-            if agg_disk is None:
-                agg_disk = comp_data['settings'].get('aggregate_disk', {}).get('default')
+            minimum_required_aggregate_disk = data['application']['components'][comp_name]['settings'].get('aggregate_disk', {}).get('min')
+            if minimum_required_aggregate_disk is None:
+                minimum_required_aggregate_disk = comp_data['settings'].get('aggregate_disk', {}).get('default')
 
-            if agg_disk is not None and replicas is not None:
-                data['application']['components'][comp_name]['settings']['instance_disk'] = {'value': int(agg_disk/replicas)}
+            if minimum_required_aggregate_disk is not None and replicas is not None:
+                data['application']['components'][comp_name]['settings']['instance_disk'] = {'value': int(minimum_required_aggregate_disk/replicas)}
 
             # Validate product of replicas and memory per instance is greater than the required aggregate
-            agg_mem = data['application']['components'][comp_name]['settings'].get('aggregate_memory', {}).get('value')
-            if agg_mem is None:
-                agg_mem = comp_data['settings'].get('aggregate_memory', {}).get('default')
+            minimum_required_aggregate_memory = data['application']['components'][comp_name]['settings'].get('aggregate_memory', {}).get('min')
+            if minimum_required_aggregate_memory is None:
+                minimum_required_aggregate_memory = comp_data['settings'].get('aggregate_memory', {}).get('default')
             inst_type = data['application']['components'][comp_name]['settings'].get('inst_type', {}).get('value')
             if inst_type is None:
                 inst_type = comp_data['settings'].get('inst_type', {}).get('default')
 
-            if agg_mem is not None and inst_type is not None:
+            if minimum_required_aggregate_memory is not None and inst_type is not None:
                 inst_mem = config['application']['annotations'][inst_type]['mem']
-                if int(inst_mem*replicas) <= agg_mem:
-                    raise AdjustError(f"component {comp_name}: {replicas} {inst_type} instances only have {inst_mem*replicas} GB of memory which is less than {agg_mem} GB required", 
+                if int(inst_mem*replicas) <= minimum_required_aggregate_memory:
+                    raise AdjustError(f"component {comp_name}: {replicas} {inst_type} instances only have {inst_mem*replicas} GB of memory which is less than {minimum_required_aggregate_memory} GB required", 
                         status = "rejected", reason = "scheduling-failed")
 
         # Store application key in state
