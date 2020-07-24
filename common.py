@@ -151,7 +151,7 @@ def query_state(driver_name, config_path_path_or_dict, include_derived=False):
                 q["components"][c_name]["settings"]["instance_disk"] = state["application"]["components"][c_name]["settings"]["instance_disk"]
             else: # derive from defaults if present
                 replicas = q['components'][c_name]['settings'].get('replicas', {}).get('value')
-                agg_disk = q['components'][c_name]['settings'].get('aggregate_disk', {}).get('value')
+                agg_disk = q['components'][c_name]['settings'].get('aggregate_disk', {}).get('min')
                 if agg_disk is not None and replicas is not None:
                     q["components"][c_name]["settings"]["instance_disk"] = {'value': int(agg_disk/replicas)}
 
